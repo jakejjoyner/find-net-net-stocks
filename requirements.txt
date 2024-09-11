@@ -1,0 +1,3 @@
+!!! REQUIRED PACKAGES !!!
+fmpsdk
+xlrd
