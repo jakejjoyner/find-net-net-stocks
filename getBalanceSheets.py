@@ -5,6 +5,8 @@ import pandas as pd
 # Create request header
 headers = {'User-agent': "jakejoyner9@gmail.com"}
 
+# FORMAT DATA FROM THE EDGAR DATABASE
+
 def get_cik_by_index(index, headers=headers):
         # Get all company names/CIK keys
         companyTickers = requests.get(
@@ -19,7 +21,7 @@ def get_cik_by_index(index, headers=headers):
         companyData['cik_str'] = companyData['cik_str'].astype(str).str.zfill(10)
 
         # Get the CIK at the inputted index
-        cik = companyData[index:index+1].cik_str[0]
+        cik = companyData[index:index+1].iloc[0]["cik_str"]
 
         return cik
 
@@ -38,7 +40,7 @@ def get_filtered_filings(index, ten_k=True, just_accesion_numbers=False, headers
     else:
         df = company_filings_df[company_filings_df['form'] == '10-Q']
     if just_accesion_numbers:
-        df = df.set_index['reportDate']
+        df = df.set_index('reportDate')
         accession_df = df['accessionNumber']
         return accession_df
     else:
@@ -47,7 +49,7 @@ def get_filtered_filings(index, ten_k=True, just_accesion_numbers=False, headers
 def get_facts(index, headers=headers):
       cik = get_cik_by_index(index)
       url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
-      company_facts = requests.get(url, headers).json()
+      company_facts = requests.get(url, headers=headers).json()
       return company_facts
 
 def fact_df(index, headers=headers):
@@ -74,7 +76,8 @@ def annual_facts(index, headers=headers):
         )
       df, label_dict = fact_df(index, headers)
       ten_k = df[df["accn"].isin(accession_nums)]
-      ten_k = ten_k[ten_k.index.isin(accession_nums.index)]
+      accession_nums_index_inDateTime = pd.to_datetime(accession_nums.index) # Explicitly cast to make the compiler happy
+      ten_k = ten_k[ten_k.index.isin(accession_nums_index_inDateTime)]
       pivot = ten_k.pivot_table(values="val", columns="fact", index="end")
       pivot.rename(columns=label_dict, inplace=True)
-      
+      return pivot.T
